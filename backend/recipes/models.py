@@ -1,6 +1,7 @@
 from django.db import models
 from django.core.validators import MinValueValidator
 from django.db.models import UniqueConstraint, CheckConstraint, Q, F
+
 from users.models import User
 from .constants import (
     INGREDIENT_NAME_MAX_LENGTH,
@@ -41,7 +42,7 @@ class Recipe(models.Model):
     text = models.TextField('Описание процесса приготовления')
     author = models.ForeignKey(
         User,
-        related_name='authored_recipes',
+        related_name='recipes',
         on_delete=models.CASCADE,
         verbose_name='Автор публикации',
     )

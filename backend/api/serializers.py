@@ -4,7 +4,6 @@ from djoser.serializers import UserCreateSerializer as BaseUserCreateSerializer
 from drf_extra_fields.fields import Base64ImageField
 from rest_framework import serializers
 
-
 from api.constants import (
     MIN_AMOUNT,
     MIN_COOKING_TIME,
@@ -83,7 +82,7 @@ class SubscriptionSerializer(UserSerializer):
 
     recipes = serializers.SerializerMethodField()
     recipes_count = serializers.IntegerField(
-        source='authored_recipes.count', read_only=True)
+        source='recipes.count', read_only=True)
 
     class Meta(UserSerializer.Meta):
         fields = UserSerializer.Meta.fields + ('recipes', 'recipes_count')
@@ -91,7 +90,7 @@ class SubscriptionSerializer(UserSerializer):
     def get_recipes(self, obj):
         request = self.context.get('request')
         limit = request.query_params.get('recipes_limit')
-        recipes = obj.authored_recipes.all()
+        recipes = obj.recipes.all()
         if limit and limit.isdigit():
             recipes = recipes[:int(limit)]
         return RecipeShortSerializer(recipes, many=True, context=self.context).data
@@ -172,14 +171,6 @@ class RecipeReadSerializer(serializers.ModelSerializer):
         request = self.context.get('request')
         return (request and request.user.is_authenticated
                 and obj.in_grocery_lists.filter(user=request.user).exists())
-
-    def to_representation(self, instance):
-        representation = super().to_representation(instance)
-        request = self.context.get('request')
-        if representation['image'] and request:
-            representation['image'] = request.build_absolute_uri(
-                representation['image'])
-        return representation
 
 
 class RecipeCreateSerializer(serializers.ModelSerializer):

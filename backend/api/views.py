@@ -1,8 +1,10 @@
 from datetime import datetime
 from io import BytesIO
+import hashlib
+import base64
 
 from django.db.models import Sum
-from django.http import FileResponse
+from django.http import FileResponse, HttpResponseRedirect
 from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
 from djoser.views import UserViewSet as DjoserUserViewSet
@@ -83,7 +85,7 @@ class UserViewSet(DjoserUserViewSet):
         user = request.user
         subscriptions = User.objects.filter(
             subscribers__user=user
-        ).prefetch_related('authored_recipes', 'subscribers')
+        ).prefetch_related('recipes', 'subscribers')
 
         page = self.paginate_queryset(subscriptions)
         serializer = SubscriptionSerializer(
@@ -268,7 +270,16 @@ class RecipeViewSet(viewsets.ModelViewSet):
 
     @action(detail=True, methods=['get'], url_path='get-link')
     def get_link(self, request, pk=None):
-        """Получение короткой ссылки на рецепт."""
-        get_object_or_404(Recipe, id=pk)
-        short_url = request.build_absolute_uri(f'/recipes/{pk}/')
+        recipe = get_object_or_404(Recipe, id=pk)
+
+        data_to_hash = f"{recipe.id}_{datetime.now().timestamp()}"
+        short_code = base64.urlsafe_b64encode(hashlib.sha256(
+            data_to_hash.encode()).digest())[:8].decode()
+
+        short_url = f"{request.build_absolute_uri('/').rstrip('/')}/s/{short_code}"
         return Response({'short-link': short_url})
+    # Вроде бы добавила работу с короткой ссылкой...
+
+    @action(detail=False, methods=['get'], url_path='s/(?P<short_code>[^/.]+)')
+    def redirect_short_link(self, request, short_code=None):
+        return HttpResponseRedirect(request.build_absolute_uri(f'/recipes/{short_code}/'))
