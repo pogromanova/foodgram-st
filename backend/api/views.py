@@ -279,7 +279,3 @@ class RecipeViewSet(viewsets.ModelViewSet):
         short_url = f"{request.build_absolute_uri('/').rstrip('/')}/s/{short_code}"
         return Response({'short-link': short_url})
     # Вроде бы добавила работу с короткой ссылкой...
-
-    @action(detail=False, methods=['get'], url_path='s/(?P<short_code>[^/.]+)')
-    def redirect_short_link(self, request, short_code=None):
-        return HttpResponseRedirect(request.build_absolute_uri(f'/recipes/{short_code}/'))

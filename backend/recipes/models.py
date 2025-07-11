@@ -3,13 +3,13 @@ from django.core.validators import MinValueValidator
 from django.db.models import UniqueConstraint, CheckConstraint, Q, F
 
 from users.models import User
-from .constants import (
+from recipes.constants import (
     INGREDIENT_NAME_MAX_LENGTH,
     MEASUREMENT_UNIT_MAX_LENGTH,
     RECIPE_NAME_MAX_LENGTH,
-    MIN_COOKING_TIME_MINUTES,
+    MIN_COOKING_TIME,
     COOKING_TIME_VALIDATOR_MSG,
-    MIN_INGREDIENT_AMOUNT,
+    MIN_AMOUNT,
     INGREDIENT_AMOUNT_VALIDATOR_MSG,
 )
 
@@ -57,7 +57,7 @@ class Recipe(models.Model):
     cooking_time = models.PositiveSmallIntegerField(
         'Время приготовления (мин)',
         validators=[MinValueValidator(
-            MIN_COOKING_TIME_MINUTES, message=COOKING_TIME_VALIDATOR_MSG)],
+            MIN_COOKING_TIME, message=COOKING_TIME_VALIDATOR_MSG)],
     )
     pub_date = models.DateTimeField(
         'Дата публикации', auto_now_add=True, db_index=True)
@@ -88,7 +88,7 @@ class RecipeComponent(models.Model):
     amount = models.PositiveSmallIntegerField(
         'Количество',
         validators=[MinValueValidator(
-            MIN_INGREDIENT_AMOUNT, message=INGREDIENT_AMOUNT_VALIDATOR_MSG)],
+            MIN_AMOUNT, message=INGREDIENT_AMOUNT_VALIDATOR_MSG)],
     )
 
     class Meta:
