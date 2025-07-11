@@ -5,9 +5,10 @@ import base64
 
 from django.db.models import Sum
 from django.http import FileResponse, HttpResponseRedirect
-from django.shortcuts import get_object_or_404
+from django.shortcuts import get_object_or_404,redirect
 from django_filters.rest_framework import DjangoFilterBackend
 from djoser.views import UserViewSet as DjoserUserViewSet
+from django.views.decorators.http import require_http_methods
 from rest_framework import viewsets, status
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated, SAFE_METHODS, AllowAny
@@ -34,6 +35,21 @@ from .permissions import IsAuthorOrReadOnly
 from .pagination import RecipePagination
 from .filters import IngredientFilter, RecipeFilter
 
+
+@require_http_methods(["GET"])
+def redirect_to_recipe(request, short_code):
+    """Редирект с короткой ссылки на полную страницу рецепта."""
+    # Ищем рецепт по хэшу (используем только ID, чтобы хэш не менялся)
+    for recipe in Recipe.objects.all():
+        data_to_hash = f"{recipe.id}"
+        expected_code = base64.urlsafe_b64encode(
+            hashlib.sha256(data_to_hash.encode()).digest()
+        )[:8].decode()
+        
+        if expected_code == short_code:
+            return redirect(f'/recipes/{recipe.id}/')
+
+    return redirect('/')
 
 class UserViewSet(DjoserUserViewSet):
     """ViewSet для работы с пользователями."""
@@ -271,11 +287,12 @@ class RecipeViewSet(viewsets.ModelViewSet):
     @action(detail=True, methods=['get'], url_path='get-link')
     def get_link(self, request, pk=None):
         recipe = get_object_or_404(Recipe, id=pk)
-
-        data_to_hash = f"{recipe.id}_{datetime.now().timestamp()}"
-        short_code = base64.urlsafe_b64encode(hashlib.sha256(
-            data_to_hash.encode()).digest())[:8].decode()
-
+        
+        data_to_hash = f"{recipe.id}"
+        short_code = base64.urlsafe_b64encode(
+            hashlib.sha256(data_to_hash.encode()).digest()
+        )[:8].decode()
+        
         short_url = f"{request.build_absolute_uri('/').rstrip('/')}/s/{short_code}"
         return Response({'short-link': short_url})
     # Вроде бы добавила работу с короткой ссылкой...
